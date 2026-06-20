@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './App.css';
 
 export default function App() {
@@ -21,25 +21,28 @@ export default function App() {
     setResult(null);
 
     try {
-      const params = new URLSearchParams({
-        drug_a: drugA,
-        drug_b: drugB,
-        ...(patientAge && { patient_age: patientAge }),
-        ...(patientConditions && { patient_conditions: patientConditions })
-      });
-
-      const response = await fetch(`http://localhost:8000/check-combination?${params}`, {
-        method: 'POST'
+      const response = await fetch('http://localhost:8000/check-combination', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          drug_a: drugA,
+          drug_b: drugB,
+          ...(patientAge && { patient_age: parseInt(patientAge) }),
+          ...(patientConditions && { patient_conditions: patientConditions })
+        })
       });
 
       if (!response.ok) {
-        throw new Error('API error');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'API error');
       }
 
       const data = await response.json();
       setResult(data);
     } catch (err) {
-      setError('Failed to check combination. Make sure backend is running on port 8000.');
+      setError(`Failed to check combination: ${err.message}`);
       console.error(err);
     } finally {
       setLoading(false);

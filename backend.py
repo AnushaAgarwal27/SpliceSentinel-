@@ -2,8 +2,9 @@ import httpx
 import sqlite3
 import json
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from anthropic import Anthropic
 import phoenix as px
 from openinference.instrumentation.anthropic import AnthropicInstrumentor
@@ -22,6 +23,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class DrugCheckRequest(BaseModel):
+    drug_a: str
+    drug_b: str
+    patient_age: int = None
+    patient_conditions: str = None
 
 # Initialize database
 def init_db():
@@ -175,7 +182,7 @@ Summarize in 2-3 sentences: what symptom or pattern emerges? How severe? How soo
 Keep it plain language, suitable for a doctor to read."""
 
     message = client.messages.create(
-        model="claude-opus-4-1-20250805",
+        model="claude-sonnet-4-6",
         max_tokens=300,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -199,7 +206,7 @@ Pattern from patient reports: {summary}{patient_context}
 Write a short note (2-3 sentences) that a doctor can paste directly into their chart. Include: drug names, whether interaction is flagged, what patients reported, and any clinical consideration. Format it as a clinical note."""
 
     message = client.messages.create(
-        model="claude-opus-4-1-20250805",
+        model="claude-sonnet-4-6",
         max_tokens=250,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -232,7 +239,7 @@ Be specific. Format: "Similarity: [HIGH/MOD/LOW] because..."
 """
 
     message = client.messages.create(
-        model="claude-opus-4-1-20250805",
+        model="claude-sonnet-4-6",
         max_tokens=200,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -240,8 +247,16 @@ Be specific. Format: "Similarity: [HIGH/MOD/LOW] because..."
 
 # API Endpoints
 @app.post("/check-combination")
-async def check_combination(drug_a: str, drug_b: str, patient_age: int = None, patient_conditions: str = None):
+async def check_combination(request: DrugCheckRequest):
     """Main endpoint: check drug combination against FDA data"""
+
+    if not request.drug_a or not request.drug_b:
+        raise HTTPException(status_code=400, detail="Both drug_a and drug_b are required")
+
+    drug_a = request.drug_a.strip()
+    drug_b = request.drug_b.strip()
+    patient_age = request.patient_age
+    patient_conditions = request.patient_conditions
 
     print(f"Checking: {drug_a} + {drug_b}")
 
