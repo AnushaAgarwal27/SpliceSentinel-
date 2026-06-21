@@ -92,17 +92,22 @@ async def fetch_report_by_id(report_id: str) -> Dict:
     Fetch a specific FAERS report by safetyreportid.
 
     Args:
-        report_id: FDA safetyreportid (e.g., "4801719-0" or "10285688")
+        report_id: FDA safetyreportid (e.g., "10197492")
 
     Returns:
         Report details if found, empty dict otherwise
     """
     print(f"\n🔍 Searching for report ID: {report_id}")
 
-    # Try multiple search formats
+    # Strip any whitespace
+    report_id = report_id.strip()
+
+    # Try multiple search formats - OpenFDA requires exact format
     search_formats = [
-        f'safetyreportid:"{report_id}"',  # Exact format
-        f'safetyreportid:{report_id}',     # Without quotes
+        f'safetyreportid:{report_id}',           # Numeric, no quotes
+        f'safetyreportid:"{report_id}"',         # With quotes
+        f'safetyreportid.exact:{report_id}',     # Exact match modifier
+        f'patient.sequence:{report_id}',         # Alternative field
     ]
 
     if OPENFDA_API_KEY:
@@ -121,7 +126,7 @@ async def fetch_report_by_id(report_id: str) -> Dict:
 
         try:
             print(f"  Trying: {search_term}")
-            async with httpx.AsyncClient(timeout=10) as client:
+            async with httpx.AsyncClient(timeout=30) as client:
                 response = await client.get(BASE_URL, params=params)
                 response.raise_for_status()
                 data = response.json()
@@ -131,15 +136,37 @@ async def fetch_report_by_id(report_id: str) -> Dict:
                     found_report = results[0]
                     found_id = found_report.get("safetyreportid", "MISSING")
                     print(f"✅ FOUND! Report ID in response: {found_id}")
-                    print(f"   Full report keys: {list(found_report.keys())[:5]}")
                     return found_report
                 else:
                     meta = data.get("meta", {})
                     total = meta.get("results", {}).get("total", 0)
-                    print(f"   No results. Total in DB for this search: {total}")
+                    print(f"   No results. Total matching this query: {total}")
         except Exception as e:
             print(f"   Error: {e}")
             continue
+
+    # If all searches fail, try the limit=100 approach to get broader results
+    print(f"  Trying fallback: pagination search...")
+    try:
+        params = {
+            "limit": 100
+        }
+        if api_key:
+            params["api_key"] = api_key
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(BASE_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+            results = data.get("results", [])
+
+            for result in results:
+                if str(result.get("safetyreportid", "")) == str(report_id):
+                    print(f"✅ FOUND in fallback! Report ID: {result.get('safetyreportid')}")
+                    return result
+
+    except Exception as e:
+        print(f"   Fallback error: {e}")
 
     print(f"❌ FAILED to find report {report_id} after all attempts")
     return {}
