@@ -3,20 +3,26 @@ import sqlite3
 import json
 import os
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import google.generativeai as genai
-from dotenv import load_dotenv
+from anthropic import Anthropic
+from phoenix.otel import register
+from openinference.instrumentation.anthropic import AnthropicInstrumentor
 
-load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-OPENFDA_API_KEY = os.getenv("OPENFDA_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY environment variable not set")
-if not OPENFDA_API_KEY:
-    raise ValueError("OPENFDA_API_KEY environment variable not set")
-genai.configure(api_key=GEMINI_API_KEY)
+# Initialize Phoenix Cloud tracing
+api_key = os.getenv("PHOENIX_API_KEY")
+if api_key:
+    register(
+        project_name="drug-interaction-checker",
+        api_key=api_key,
+        endpoint="https://app.phoenix.arize.com/v1/traces",
+        auto_instrument=True,
+    )
+    print("✅ Phoenix Cloud tracing enabled for project 'drug-interaction-checker'")
+else:
+    print("⚠️ PHOENIX_API_KEY not set. Tracing disabled.")
+
+AnthropicInstrumentor().instrument()
 
 app = FastAPI()
 
@@ -28,12 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-class DrugCheckRequest(BaseModel):
-    drug_a: str
-    drug_b: str
-    patient_age: int = None
-    patient_conditions: str = None
 
 # Initialize database
 def init_db():
@@ -71,8 +71,7 @@ def query_openfda(drug_name: str, additional_filter: str = "") -> dict:
 
     params = {
         "search": search_term,
-        "limit": 100,
-        "api_key": OPENFDA_API_KEY
+        "limit": 100
     }
 
     try:
@@ -147,12 +146,11 @@ def compute_prr(combo_reports: list, drug_a_reports: list, drug_b_reports: list)
     }
 
 def get_narrative_reports(drug_a: str, drug_b: str) -> list:
-    """Fetch reports with narrative text for Gemini analysis"""
+    """Fetch reports with narrative text for Claude analysis"""
     search_term = f'patient.drug.medicinalproduct:"{drug_a.upper()}" AND patient.drug.medicinalproduct:"{drug_b.upper()}"'
     params = {
         "search": search_term,
-        "limit": 20,
-        "api_key": OPENFDA_API_KEY
+        "limit": 20
     }
     try:
         response = httpx.get(OPENFDA_BASE, params=params, timeout=10)
@@ -172,7 +170,9 @@ def get_narrative_reports(drug_a: str, drug_b: str) -> list:
         return []
 
 def generate_narrative_summary(drug_a: str, drug_b: str, narratives: list) -> str:
-    """Use Gemini to read narratives and summarize pattern"""
+    """Use Claude to read narratives and summarize pattern"""
+    client = Anthropic()
+
     narrative_text = "\n\n".join([
         f"Report {i+1} ({n['date']}):\n{n['text']}"
         for i, n in enumerate(narratives)
@@ -186,16 +186,17 @@ Summarize in 2-3 sentences: what symptom or pattern emerges? How severe? How soo
 
 Keep it plain language, suitable for a doctor to read."""
 
-    try:
-        model = genai.GenerativeModel("gemini-pro")
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        print(f"Gemini API error: {e}")
-        return f"Error: Could not generate summary. API key may be invalid. Error: {str(e)}"
+    message = client.messages.create(
+        model="claude-opus-4-1-20250805",
+        max_tokens=300,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
 
 def generate_clinical_note(drug_a: str, drug_b: str, risk_level: str, summary: str, report_count: int, patient_age: int = None, patient_conditions: str = None) -> str:
     """Generate a clinical note for the doctor"""
+    client = Anthropic()
+
     patient_context = ""
     if patient_age and patient_conditions:
         patient_context = f"\nPatient profile: {patient_age}yo, {patient_conditions}."
@@ -209,16 +210,17 @@ Pattern from patient reports: {summary}{patient_context}
 
 Write a short note (2-3 sentences) that a doctor can paste directly into their chart. Include: drug names, whether interaction is flagged, what patients reported, and any clinical consideration. Format it as a clinical note."""
 
-    try:
-        model = genai.GenerativeModel("gemini-pro")
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        print(f"Gemini API error in generate_clinical_note: {e}")
-        return f"Reviewed {drug_a} + {drug_b} combination against FAERS database: {report_count} reports found. Risk level: {risk_level}. (Note generation unavailable due to API error)"
+    message = client.messages.create(
+        model="claude-opus-4-1-20250805",
+        max_tokens=250,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
 
 def analyze_patient_similarity(drug_a: str, drug_b: str, patient_age: int, patient_conditions: str, narratives: list) -> str:
-    """Use Gemini to compare patient against FAERS cases"""
+    """Use Claude to compare patient against FAERS cases"""
+    client = Anthropic()
+
     narrative_text = "\n\n".join([
         f"Case {i+1}: {n['text']}"
         for i, n in enumerate(narratives)
@@ -241,26 +243,17 @@ Compare: Does this patient resemble the people who had bad reactions?
 Be specific. Format: "Similarity: [HIGH/MOD/LOW] because..."
 """
 
-    try:
-        model = genai.GenerativeModel("gemini-pro")
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        print(f"Gemini API error in analyze_patient_similarity: {e}")
-        return f"Similarity analysis unavailable due to API error. (Check Gemini API key validity)"
+    message = client.messages.create(
+        model="claude-opus-4-1-20250805",
+        max_tokens=200,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
 
 # API Endpoints
-@app.post("/check-combination")
-async def check_combination(request: DrugCheckRequest):
+@app.post("/api/check-combination")
+async def check_combination(drug_a: str, drug_b: str, patient_age: int = None, patient_conditions: str = None):
     """Main endpoint: check drug combination against FDA data"""
-
-    if not request.drug_a or not request.drug_b:
-        raise HTTPException(status_code=400, detail="Both drug_a and drug_b are required")
-
-    drug_a = request.drug_a.strip()
-    drug_b = request.drug_b.strip()
-    patient_age = request.patient_age
-    patient_conditions = request.patient_conditions
 
     print(f"Checking: {drug_a} + {drug_b}")
 
