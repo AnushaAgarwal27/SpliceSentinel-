@@ -28,8 +28,6 @@ export default function GoogleGeminiEffectDemo() {
           pathLengthFourth,
           pathLengthFifth,
         ]}
-        title="Catch dangerous drug interactions before they happen — backed by real FDA data"
-        description="Scroll down to see the effect"
       />
     </div>
   )
