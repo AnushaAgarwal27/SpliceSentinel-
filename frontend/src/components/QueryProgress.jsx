@@ -17,9 +17,9 @@ export default function QueryProgress({ progress }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-xl shadow-lg p-8 mb-8"
+      className="bg-card-dark rounded-xl shadow-lg p-8 mb-8 border border-teal-deep/30"
     >
-      <h3 className="text-xl font-bold text-slate-800 mb-8">Analyzing Data...</h3>
+      <h3 className="text-xl font-serif font-light text-text-off-white mb-8">Analyzing Data...</h3>
 
       <div className="space-y-4">
         {stages.map((stage, index) => (
@@ -35,7 +35,7 @@ export default function QueryProgress({ progress }) {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="w-8 h-8 rounded-full bg-success flex items-center justify-center text-white font-bold"
+                  className="w-8 h-8 rounded-full bg-teal-deep flex items-center justify-center text-text-off-white font-bold"
                 >
                   ✓
                 </motion.div>
@@ -44,11 +44,11 @@ export default function QueryProgress({ progress }) {
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                  className="w-8 h-8 rounded-full border-3 border-primary border-t-transparent flex items-center justify-center"
+                  className="w-8 h-8 rounded-full border-3 border-teal-deep border-t-transparent flex items-center justify-center"
                 />
               )}
               {index > currentIndex && (
-                <div className="w-8 h-8 rounded-full border-2 border-slate-300 flex items-center justify-center text-slate-400">
+                <div className="w-8 h-8 rounded-full border-2 border-text-warm-gray/30 flex items-center justify-center text-text-warm-gray">
                   •
                 </div>
               )}
@@ -56,7 +56,7 @@ export default function QueryProgress({ progress }) {
 
             <div className="flex-1">
               <p className={`font-semibold ${
-                index <= currentIndex ? 'text-slate-800' : 'text-slate-400'
+                index <= currentIndex ? 'text-text-off-white' : 'text-text-warm-gray/60'
               }`}>
                 {stage.label}
               </p>
@@ -69,13 +69,13 @@ export default function QueryProgress({ progress }) {
 
       {/* Progress bar */}
       <motion.div
-        className="mt-8 bg-slate-200 rounded-full h-2 overflow-hidden"
+        className="mt-8 bg-text-warm-gray/10 rounded-full h-2 overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
         <motion.div
-          className="h-full bg-gradient-to-r from-primary to-secondary"
+          className="h-full bg-gradient-to-r from-teal-deep to-gold-muted"
           initial={{ width: '0%' }}
           animate={{ width: `${((currentIndex + 1) / stages.length) * 100}%` }}
           transition={{ duration: 0.5 }}

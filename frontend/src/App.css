@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html,
+  body,
+  #root {
+    background-color: #0A0A0B;
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

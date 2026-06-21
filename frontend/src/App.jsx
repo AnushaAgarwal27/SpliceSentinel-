@@ -112,38 +112,26 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-bg-dark">
       {/* Header */}
-      <header className="bg-gradient-to-r from-indigo-900 to-blue-900 text-white py-12 px-4 border-b border-indigo-500/30">
+      <header className="bg-card-dark text-white py-12 px-4 border-b border-teal-deep/30">
         <div className="max-w-6xl mx-auto flex justify-between items-start">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl font-bold mb-2">
+            <h1 className="text-4xl font-serif font-light text-text-off-white mb-2">
               🧬 Splice Sentinel
             </h1>
-            <p className="text-lg opacity-90">
+            <p className="text-lg text-text-warm-gray font-sans">
               Real FDA adverse event data to flag dangerous drug combinations
             </p>
           </motion.div>
           <div className="flex gap-3">
             <button
               onClick={() => setShowProof(true)}
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                padding: '10px 16px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+              className="px-4 py-2 bg-text-warm-gray/20 hover:bg-text-warm-gray/30 text-text-off-white font-semibold rounded text-sm transition-colors border border-text-warm-gray/30 whitespace-nowrap"
             >
               ✅ Show Proof
             </button>
@@ -153,19 +141,7 @@ export default function App() {
                 setResults(null)
                 setProgress({})
               }}
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                color: 'white',
-                padding: '10px 16px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                whiteSpace: 'nowrap'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+              className="px-4 py-2 bg-text-warm-gray/20 hover:bg-text-warm-gray/30 text-text-off-white font-semibold rounded text-sm transition-colors border border-text-warm-gray/30 whitespace-nowrap"
             >
               ← Back to Home
             </button>
@@ -182,7 +158,7 @@ export default function App() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6 p-4 bg-red-900/20 border border-red-500/50 text-red-300 rounded-lg"
+              className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-300 rounded-lg"
             >
               ❌ {error}
             </motion.div>
@@ -242,21 +218,21 @@ export default function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 }}
-                    className="rounded-2xl bg-gradient-to-br from-indigo-900/20 to-cyan-900/20 border border-indigo-500/30 p-8"
+                    className="rounded-2xl bg-card-dark border border-teal-deep/30 p-8"
                   >
                     <div className="flex gap-4">
                       <div className="text-4xl">⚠️</div>
                       <div className="flex-1">
-                        <h3 className="text-2xl font-bold text-indigo-300 mb-4">
+                        <h3 className="text-2xl font-bold text-gold-muted mb-4">
                           {elevatedSignals.length} High Risk Signal{elevatedSignals.length !== 1 ? 's' : ''} (PRR ≥ 2.0)
                         </h3>
                         <div className="space-y-2 max-h-80 overflow-y-auto">
                           {elevatedSignals.map((sig, i) => {
                             const maxPRR = Math.max(sig.prr_vs_drug_a, sig.prr_vs_drug_b)
                             return (
-                              <div key={i} className="bg-indigo-900/20 border border-indigo-500/30 rounded p-3 text-sm hover:border-indigo-500/60 transition">
-                                <div className="font-bold text-indigo-200">{sig.reaction}</div>
-                                <div className="text-xs text-indigo-300 mt-1">
+                              <div key={i} className="bg-teal-deep/20 border border-teal-deep/50 rounded p-3 text-sm hover:border-teal-deep transition">
+                                <div className="font-bold text-text-off-white">{sig.reaction}</div>
+                                <div className="text-xs text-text-warm-gray mt-1">
                                   {sig.combo_count} reports • {((sig.combo_count / results.combo_total) * 100).toFixed(2)}% • PRR: {maxPRR.toFixed(2)}× (A: {sig.prr_vs_drug_a.toFixed(2)}, B: {sig.prr_vs_drug_b.toFixed(2)})
                                 </div>
                               </div>
@@ -288,7 +264,7 @@ export default function App() {
                   setResults(null)
                   setProgress({})
                 }}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition"
+                className="w-full py-3 bg-teal-deep hover:bg-teal-light text-white font-semibold rounded-lg transition"
               >
                 ← Check Another Combination
               </motion.button>
@@ -298,9 +274,9 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-black border-t border-indigo-500/30 text-slate-400 py-8 px-4 mt-16">
+      <footer className="bg-bg-dark border-t border-teal-deep/30 text-text-warm-gray py-8 px-4 mt-16">
         <div className="max-w-6xl mx-auto text-center text-sm">
-          <p>Data source: FDA FAERS via openFDA API • This tool does not provide medical advice</p>
+          <p className="font-sans uppercase tracking-widest text-xs">Data source: FDA FAERS via openFDA API • This tool does not provide medical advice</p>
           <p className="mt-2 text-xs opacity-70">For hackathon demo purposes</p>
         </div>
       </footer>
