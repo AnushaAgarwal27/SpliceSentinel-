@@ -279,17 +279,16 @@ export default function SimilarCasesExpandable({
                   <div className="border-t border-slate-700 pt-2">
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Verification</p>
                     <p className="text-xs text-slate-300">
-                      1. Open{' '}
+                      Click to view this report on{' '}
                       <a
-                        href="https://fis.fda.gov/extensions/FIS/"
+                        href={`https://api.fda.gov/drug/event.json?search=safetyreportid:${active.safetyreportid}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
                       >
-                        FDA FAERS Dashboard
+                        OpenFDA API
                       </a>
-                      <br />
-                      2. Search for Report ID (copied above)
+                      {' '}(official FDA data)
                     </p>
                   </div>
                 </div>
