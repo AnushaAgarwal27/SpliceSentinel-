@@ -94,8 +94,11 @@ export default function VerificationTool({ isOpen, onClose }) {
 
               {/* Error Message */}
               {error && (
-                <div className="mb-6 bg-red-500/20 border border-red-500 rounded-lg p-4 text-red-300 text-sm">
-                  ❌ {error}
+                <div className="mb-6 bg-red-500/20 border border-red-500 rounded-lg p-4 space-y-2">
+                  <p className="text-red-300 text-sm font-semibold">❌ {error}</p>
+                  <p className="text-red-200 text-xs">
+                    Note: Not all FAERS reports are in the openFDA database. The report may exist but not be indexed yet. Try another similar case's Report ID.
+                  </p>
                 </div>
               )}
 

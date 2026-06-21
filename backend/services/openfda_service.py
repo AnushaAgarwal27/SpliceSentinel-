@@ -92,30 +92,48 @@ async def fetch_report_by_id(report_id: str) -> Dict:
     Fetch a specific FAERS report by safetyreportid.
 
     Args:
-        report_id: FDA safetyreportid (e.g., "10285688")
+        report_id: FDA safetyreportid (e.g., "4801719-0" or "10285688")
 
     Returns:
         Report details if found, empty dict otherwise
     """
-    search_term = f'safetyreportid:"{report_id}"'
-    params = {
-        "search": search_term,
-        "limit": 1
-    }
+    # Try multiple search formats
+    search_formats = [
+        f'safetyreportid:"{report_id}"',  # Exact format
+        f'safetyreportid:{report_id}',     # Without quotes
+        f'safetyreportid:"{report_id}"',   # With quotes
+    ]
 
     if OPENFDA_API_KEY:
-        params["api_key"] = OPENFDA_API_KEY
+        api_key = OPENFDA_API_KEY
+    else:
+        api_key = None
 
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(BASE_URL, params=params)
-            response.raise_for_status()
-            data = response.json()
-            results = data.get("results", [])
-            return results[0] if results else {}
-    except Exception as e:
-        print(f"❌ openFDA report fetch error for ID '{report_id}': {e}")
-        return {}
+    for search_term in search_formats:
+        params = {
+            "search": search_term,
+            "limit": 1
+        }
+
+        if api_key:
+            params["api_key"] = api_key
+
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.get(BASE_URL, params=params)
+                response.raise_for_status()
+                data = response.json()
+                results = data.get("results", [])
+
+                if results:
+                    print(f"✅ Found report {report_id} with search: {search_term}")
+                    return results[0]
+        except Exception as e:
+            print(f"⚠️  Search format '{search_term}' failed: {e}")
+            continue
+
+    print(f"❌ Report ID '{report_id}' not found in FDA database after trying all formats")
+    return {}
 
 
 async def check_drug_combination(

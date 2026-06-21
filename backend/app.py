@@ -540,7 +540,10 @@ async def verify_report(report_id: str):
         report = await fetch_report_by_id(report_id)
 
         if not report:
-            raise HTTPException(status_code=404, detail=f"Report ID {report_id} not found in FDA database")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Report ID {report_id} not found. Note: Not all FAERS reports are indexed in openFDA. Try a different report ID from the similar cases."
+            )
 
         # Extract key details for display
         safetyreportid = report.get("safetyreportid") or report_id
