@@ -28,6 +28,8 @@ export default function GoogleGeminiEffectDemo() {
           pathLengthFourth,
           pathLengthFifth,
         ]}
+        title="Splice Sentinel"
+        description="Real FDA adverse event data to flag dangerous drug combinations"
       />
     </div>
   )
